@@ -148,38 +148,44 @@ husot.thumbs.StreamThumbsManager.prototype._getGameName = function ($thumbContai
     return $game.attr('title').trim();
 }
 
-husot.thumbs.StreamThumbsManager.prototype._getChannelNameSelector = function () {
+husot.thumbs.StreamThumbsManager.prototype._getChannelName = function ($thumbContainer) {
     var self = this;
 
-    return self.getSelector([
+    var map = [
         {
-            selector: '.card__body .card__title a',
             urls: [
-                '^https?://([a-zA-Z]+\.)?twitch.tv/directory/game/Counter-Strike: Global Offensive(/?|[?].+)$',
-                '^https?://([a-zA-Z]+\.)?twitch.tv/directory/game/Counter-Strike: Global Offensive/map/(.+)$'
-            ]
+                '^https?://([a-zA-Z]+\.)?twitch.tv/directory/all(/?|/.+)$'
+            ],
+            name: function () {
+                return $thumbContainer.find('[data-a-target="live-channel-card-title-link"]').attr('href').trimSlash();
+            }
         },
         // Default (should be the last one)
         {
-            selector: '[data-a-target="live-channel-card-channel-name-link"]'
+            name: function() {
+                return $thumbContainer.find('[data-a-target="tw-thumbnail-card-link"]').attr('href').trimSlash();
+            }
         }
-    ]);
-}
+    ];
 
-husot.thumbs.StreamThumbsManager.prototype.getSelector = function (config) {
-    if (!config) {
-        return;
+    // Initial checks
+    if (typeof $thumbContainer === 'undefined' || !$thumbContainer.length) {
+        throw Error(husot.exceptions.argumentNullOrEmpty('$thumbContainer'));
     }
 
+    return self._getChannelNameForUrl(map);
+}
+
+husot.thumbs.StreamThumbsManager.prototype._getChannelNameForUrl = function (map) {
     var result;
 
-    config.forEach(function (item) {
+    map.forEach(function (item) {
         if (result) {  // Selector has been found already
             return;
         };
 
         if (!item.urls) { // Gets default selector that doesn't have URLs
-            result = item.selector;
+            result = item.name();
             return;
         };
 
@@ -188,13 +194,13 @@ husot.thumbs.StreamThumbsManager.prototype.getSelector = function (config) {
         });
 
         if (isMatch) {
-            result = item.selector;
+            result = item.name();
             return;
         }
     });
 
-    if (!result) {
-        throw Error('CSS selector not found.');
+    if (typeof result === 'undefined') {
+        throw Error('CSS selector for "Channel name" not found.');
     }
 
     return result;
@@ -215,8 +221,7 @@ husot.thumbs.StreamThumbsManager.prototype._blockBtn_onClick = function (self, s
         throw Error(husot.exceptions.elementNotFound('Thumb container'));
     };
 
-    var $name = self._getChannelNameJQuery($thumbContainer);
-    var name = $name.text().trim();
+    var name = self._getChannelName($thumbContainer);
 
     husot.settings.blockedChannels.add(name, function () {
         self._hideThumbs(name);
@@ -248,17 +253,12 @@ husot.thumbs.StreamThumbsManager.prototype._getThumbContainersForChannel = funct
         return $();
     }
 
-    var $channel = self._getChannelNameJQuery($thumbContainers)
-        .filter(function () {
-            return $(this).text().trim().toLowerCase() === name.toLowerCase();
-        });
+    return $thumbContainers.filter(function () {
+        var $this = $(this);
+        var channelName = self._getChannelName($this);
 
-    // No stream thumb with specified channel name found on the page
-    if (!$channel.length) {
-        return $();
-    }
-
-    return $channel.closest(self._getContainerJQuery());
+        return channelName.toLowerCase() === name.toLowerCase();
+    });
 }
 
 husot.thumbs.StreamThumbsManager.prototype._getThumbContainersForGame = function (name) {
@@ -279,23 +279,6 @@ husot.thumbs.StreamThumbsManager.prototype._getThumbContainersForGame = function
     });
 }
 
-husot.thumbs.StreamThumbsManager.prototype._getChannelNameJQuery = function ($thumbContainer) {
-    var self = this;
-
-    // Initial checks
-    if (typeof $thumbContainer === 'undefined' || !$thumbContainer.length) {
-        throw Error(husot.exceptions.argumentNullOrEmpty('$thumbContainer'));
-    }
-
-    var $result = $thumbContainer.find(self._getChannelNameSelector());
-
-    if (!$result.length) {
-        throw Error(husot.exceptions.elementNotFound('Channel name'));
-    }
-
-    return $result;
-}
-
 husot.thumbs.StreamThumbsManager.prototype._isThumbMustBeHiddenForChannel = function ($thumbContainer, blockedChannels) {
     var self = this;
 
@@ -307,8 +290,7 @@ husot.thumbs.StreamThumbsManager.prototype._isThumbMustBeHiddenForChannel = func
         throw Error(husot.exceptions.argumentOneElementExpected('$thumbContainer'));
     }
 
-    var $channelName = self._getChannelNameJQuery($thumbContainer);
-    var channelName = $channelName.text().trim();
+    var channelName = self._getChannelName($thumbContainer);
 
     return blockedChannels.some(function (item) {
         return channelName.toLowerCase() === item.toLowerCase();
