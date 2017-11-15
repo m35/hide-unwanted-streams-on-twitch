@@ -127,8 +127,25 @@ husot.thumbs.StreamThumbsManager.prototype._getThumbJQuery = function () {
     return $('[data-target="directory-game__card_container"]').find('figure:first');
 }
 
-husot.thumbs.StreamThumbsManager.prototype._getGameNameSelector = function () {
-    return '[data-a-target="live-channel-card-game-link"]';
+husot.thumbs.StreamThumbsManager.prototype._getGameName = function ($thumbContainer) {
+    var self = this;
+
+    // Initial checks
+    if (typeof $thumbContainer === 'undefined' || !$thumbContainer.length) {
+        throw Error(husot.exceptions.argumentNullOrEmpty('$thumbContainer'));
+    }
+
+    var $game = $thumbContainer.find('[data-a-target="live-channel-card-game-link"]')
+        .filter(function () {
+            // Check that game thumbnail is hidden explicitly and not because an ancestor element is hidden
+            return $(this).css('display') !== 'none';
+        });
+
+    if (!$game.length) {
+        return '';
+    }
+
+    return $game.attr('title').trim();
 }
 
 husot.thumbs.StreamThumbsManager.prototype._getChannelNameSelector = function () {
@@ -254,23 +271,12 @@ husot.thumbs.StreamThumbsManager.prototype._getThumbContainersForGame = function
         return $();
     }
 
-    var $game = self._getGameNameJQuery($thumbContainers)
-        .filter(function () {
-            var title1 = this.getAttribute('title');
-            var title2 = this.getAttribute('original-title');
+    return $thumbContainers.filter(function () {
+        var $this = $(this);
+        var gameName = self._getGameName($this);
 
-            if (title1 !== null && title1.toLowerCase() === name.toLowerCase()) { return true; }
-            if (title2 !== null && title2.toLowerCase() === name.toLowerCase()) { return true; }
-
-            return false;
-        });
-
-    // No stream thumb with specified game name found on the page
-    if (!$game.length) {
-        return $();
-    }
-
-    return $game.closest(self._getContainerJQuery());
+        return gameName.toLowerCase() === name.toLowerCase();
+    });
 }
 
 husot.thumbs.StreamThumbsManager.prototype._getChannelNameJQuery = function ($thumbContainer) {
@@ -288,21 +294,6 @@ husot.thumbs.StreamThumbsManager.prototype._getChannelNameJQuery = function ($th
     }
 
     return $result;
-}
-
-husot.thumbs.StreamThumbsManager.prototype._getGameNameJQuery = function ($thumbContainer) {
-    var self = this;
-
-    // Initial checks
-    if (typeof $thumbContainer === 'undefined' || !$thumbContainer.length) {
-        throw Error(husot.exceptions.argumentNullOrEmpty('$thumbContainer'));
-    }
-
-    return $thumbContainer.find(self._getGameNameSelector())
-        .filter(function () {
-            // Check that game thumbnail is hidden explicitly and not because an ancestor element is hidden
-            return $(this).css('display') !== 'none';
-        });
 }
 
 husot.thumbs.StreamThumbsManager.prototype._isThumbMustBeHiddenForChannel = function ($thumbContainer, blockedChannels) {
@@ -335,12 +326,10 @@ husot.thumbs.StreamThumbsManager.prototype._isThumbMustBeHiddenForGame = functio
         throw Error(husot.exceptions.argumentOneElementExpected('$thumbContainer'));
     }
 
-    var $gameName = self._getGameNameJQuery($thumbContainer);
-    if (!$gameName.length) { // Game name is optional in this manager
+    var gameName = self._getGameName($thumbContainer);
+    if (typeof gameName === 'undefined' || gameName === '') { // Game name is optional in this manager
         return false;
     }
-
-    var gameName = $gameName.attr('title') || $gameName.attr('original-title');
 
     return blockedGames.some(function (item) {
         return gameName.toLowerCase() === item.toLowerCase();
@@ -491,13 +480,13 @@ husot.thumbs.GameThumbsManager.prototype._getGameName = function($thumbContainer
         throw Error(husot.exceptions.argumentNullOrEmpty('$thumbContainer'));
     }
 
-    var $result = $thumbContainer.find('.tw-card-body .tw-box-art-card__title');
+    var $game = $thumbContainer.find('.tw-card-body .tw-box-art-card__title');
 
-    if (!$result.length) {
+    if (!$game.length) {
         throw Error(husot.exceptions.elementNotFound('Game name'));
     }
 
-    return $result.text().trim();
+    return $game.text().trim();
 }
 
 husot.thumbs.GameThumbsManager.prototype._showSettingsBtn_onClick = function (self, sender) {
