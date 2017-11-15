@@ -121,7 +121,7 @@ husot.thumbs.StreamThumbsManager = function () {
         },
         // Default (should be the last one)
         {
-            selector: '.card__body .card__info a'
+            selector: '[data-a-target="live-channel-card-channel-name-link"]'
         }
     ];
 }
@@ -130,19 +130,19 @@ husot.thumbs.StreamThumbsManager.prototype = Object.create(husot.thumbs.ThumbsMa
 husot.thumbs.StreamThumbsManager.prototype.constructor = husot.thumbs.StreamThumbsManager;
 
 husot.thumbs.StreamThumbsManager.prototype._getContainerSelector = function () {
-    return '.js-directory .tower > .ember-view:not(.directory-ad)';
+    return '[data-target="directory-container"] .tw-tower > [data-target]';
 }
 
 husot.thumbs.StreamThumbsManager.prototype._getThumbSelector = function () {
-    return '.js-directory .tower > .ember-view .card__img';
+    return $('[data-target="directory-game__card_container"]').find('figure:first');
 }
 
 husot.thumbs.StreamThumbsManager.prototype._getGameNameSelector = function () {
-    return '.card__boxpin';
+    return '[data-a-target="live-channel-card-game-link"]';
 }
 
 husot.thumbs.StreamThumbsManager.prototype.getDomListnerThumbSelector = function () {
-    return '[data-tt_content=live_channel], [data-tt_content=language_stream], [data-tt_content=popular_videos], [data-tt_content=recent_videos], [data-tt_content=recommended_videos]';
+    return '[data-target="directory-game__card_container"]';
 }
 
 husot.thumbs.StreamThumbsManager.prototype._getChannelNameSelector = function () {
@@ -474,19 +474,19 @@ husot.thumbs.GameThumbsManager.prototype = Object.create(husot.thumbs.ThumbsMana
 husot.thumbs.GameThumbsManager.prototype.constructor = husot.thumbs.GameThumbsManager;
 
 husot.thumbs.GameThumbsManager.prototype._getContainerSelector = function () {
-    return '#directory-list .js-directory-game';
+    return $('[data-target="directory-page__card-container"]').parent();
 }
 
 husot.thumbs.GameThumbsManager.prototype._getThumbSelector = function () {
-    return '.js-directory .tower .js-directory-game .card__img';
+    return '[data-target="directory-page__card-container"] figure';
 }
 
 husot.thumbs.GameThumbsManager.prototype.getDomListnerThumbSelector = function () {
-    return '[data-tt_content=popular_games], [data-tt_content=followed_game]';
+    return '[data-target="directory-page__card-container"]';
 }
 
 husot.thumbs.GameThumbsManager.prototype._getGameNameSelector = function () {
-    return '.card__body .card__title';
+    return '.tw-card-body .tw-box-art-card__title';
 }
 
 husot.thumbs.GameThumbsManager.prototype._showSettingsBtn_onClick = function (self, sender) {
